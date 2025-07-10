@@ -110,7 +110,7 @@
 <body class="bg-gray-900 flex flex-col items-center justify-center min-h-screen p-4">
 
     <div id="main-content" class="text-center">
-        <h1 class="text-4xl md:text-6xl text-white mb-8" style="font-family: 'Creepster', cursive;">Vulkan-Einladung</h1>
+        <h1 class="text-4xl md:text-6xl text-white mb-8" style="font-family: 'Creepster', cursive;">Achims-Einladung</h1>
         <button id="startButton" class="start-button bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-6 rounded-lg shadow-lg transition-transform transform hover:scale-105">
             Eruption starten!
         </button>
@@ -263,9 +263,7 @@
                         clearInterval(smokeInterval);
                         smokeInterval = null;
                     }
-                    // KORREKTUR: Nur die dynamisch erstellten Elemente entfernen.
                     document.querySelectorAll('.letter, .smoke-particle').forEach(el => el.remove());
-                    // Den "Nochmal!"-Button explizit entfernen.
                     resetButton.remove();
                     
                     mainContent.classList.remove('hidden');
