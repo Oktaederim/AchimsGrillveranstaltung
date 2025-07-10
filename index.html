@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vulkan-Einladung</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Creepster&family=Roboto:wght@700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Eigene Stile für die Animation und das Aussehen */
+        body {
+            font-family: 'Roboto', sans-serif;
+            background: linear-gradient(to top, #2c3e50, #1a2937);
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+        }
+
+        .scene {
+            position: relative;
+            width: 100%;
+            max-width: 800px;
+            height: 600px;
+            display: flex;
+            justify-content: center;
+            align-items: flex-end;
+        }
+
+        .volcano {
+            position: relative;
+            width: 350px;
+            height: 250px;
+            background: linear-gradient(to top, #4a2e1a, #6b4226);
+            clip-path: polygon(20% 100%, 80% 100%, 100% 20%, 0 20%);
+            border-radius: 0 0 10px 10px;
+            z-index: 2;
+        }
+
+        .volcano::before {
+            content: '';
+            position: absolute;
+            top: 18%;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 40%;
+            height: 20px;
+            background: #2c1a0e;
+            border-radius: 50%;
+            border: 5px solid #fd5e53;
+            box-shadow: 0 0 15px 5px #fd5e53, inset 0 0 10px #ff3b2e;
+        }
+        
+        .letter {
+            position: absolute;
+            color: #fff;
+            font-size: 1.5rem;
+            font-weight: bold;
+            will-change: transform, opacity;
+            opacity: 0;
+            text-shadow: 0 0 5px #ff8c00, 0 0 10px #ff8c00;
+            transition: transform 1.5s cubic-bezier(0.5, 1.5, 0.5, 1), opacity 1.5s ease-out, color 1s ease-in-out, text-shadow 1s ease-in-out;
+            z-index: 10;
+        }
+
+        .invitation-container {
+            position: absolute;
+            top: 40px; 
+            width: 100%;
+            text-align: center;
+            font-size: 1.5rem;
+            line-height: 1.4;
+            font-weight: bold;
+            letter-spacing: 2px;
+            z-index: 1;
+        }
+        
+        .start-button {
+            font-family: 'Creepster', cursive;
+            font-size: 1.5rem;
+            letter-spacing: 2px;
+        }
+
+        .smoke-particle {
+            position: absolute;
+            background: #555;
+            border-radius: 50%;
+            opacity: 0;
+            animation: rise 4s infinite ease-in;
+            z-index: 3;
+        }
+
+        @keyframes rise {
+            0% {
+                transform: translateY(0) scale(1);
+                opacity: 0.7;
+            }
+            100% {
+                transform: translateY(-200px) scale(3);
+                opacity: 0;
+            }
+        }
+
+    </style>
+</head>
+<body class="bg-gray-900 flex flex-col items-center justify-center min-h-screen p-4">
+
+    <div id="main-content" class="text-center">
+        <h1 class="text-4xl md:text-6xl text-white mb-8" style="font-family: 'Creepster', cursive;">Vulkan-Einladung</h1>
+        <button id="startButton" class="start-button bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-6 rounded-lg shadow-lg transition-transform transform hover:scale-105">
+            Eruption starten!
+        </button>
+    </div>
+
+    <div id="animation-container" class="hidden w-full h-full flex items-center justify-center">
+        <div class="scene">
+            <div class="volcano"></div>
+            <div id="smoke-container"></div>
+            <div id="invitation-text-placeholder" class="invitation-container"></div>
+        </div>
+    </div>
+
+    <script>
+        // --- KONFIGURATION ---
+        const INVITATION_LINES = [
+            "Einladung zur Lava-Party!",
+            "",
+            "Wann: Samstag, 20:00 Uhr",
+            "Wo: Am Fuße des Vulkans",
+            "",
+            "Bring gute Laune mit!",
+            "Wir freuen uns auf dich!"
+        ];
+        // ---------------------
+
+        const startButton = document.getElementById('startButton');
+        const mainContent = document.getElementById('main-content');
+        const animationContainer = document.getElementById('animation-container');
+        const placeholderContainer = document.getElementById('invitation-text-placeholder');
+        const smokeContainer = document.getElementById('smoke-container');
+        const scene = document.querySelector('.scene');
+        let volcano;
+        let smokeInterval;
+
+        let letterPositions = [];
+
+        function initializeElements() {
+            volcano = document.querySelector('.volcano');
+        }
+
+        function calculateLetterPositions() {
+            letterPositions = [];
+            placeholderContainer.innerHTML = '';
+            placeholderContainer.style.visibility = 'hidden';
+
+            const sceneRect = scene.getBoundingClientRect();
+            
+            INVITATION_LINES.forEach(lineText => {
+                const lineDiv = document.createElement('div');
+                if (lineText.trim() === '') {
+                    lineDiv.innerHTML = '&nbsp;';
+                } else {
+                    lineText.split('').forEach(char => {
+                        const span = document.createElement('span');
+                        span.innerHTML = char === ' ' ? '&nbsp;' : char;
+                        lineDiv.appendChild(span);
+                    });
+                }
+                placeholderContainer.appendChild(lineDiv);
+            });
+
+            const allSpans = placeholderContainer.querySelectorAll('span');
+            allSpans.forEach(span => {
+                const rect = span.getBoundingClientRect();
+                letterPositions.push({
+                    char: span.textContent,
+                    x: rect.left - sceneRect.left,
+                    y: rect.top - sceneRect.top
+                });
+            });
+
+            placeholderContainer.innerHTML = '';
+            placeholderContainer.style.visibility = 'visible';
+        }
+
+        function createSmoke() {
+            if (smokeInterval) clearInterval(smokeInterval);
+
+            const volcanoRect = volcano.getBoundingClientRect();
+            const sceneRect = scene.getBoundingClientRect();
+            const startX = volcanoRect.left - sceneRect.left + (volcanoRect.width / 2);
+            const startY = volcanoRect.top - sceneRect.top + 20;
+
+            smokeInterval = setInterval(() => {
+                if(document.hidden) return;
+                const particle = document.createElement('div');
+                particle.className = 'smoke-particle';
+                const size = Math.random() * 15 + 5;
+                particle.style.width = `${size}px`;
+                particle.style.height = `${size}px`;
+                particle.style.left = `${startX + (Math.random() - 0.5) * 40}px`;
+                particle.style.top = `${startY}px`;
+                particle.style.animationDelay = `${Math.random() * 2}s`;
+                
+                smokeContainer.appendChild(particle);
+
+                setTimeout(() => particle.remove(), 4000);
+            }, 250);
+        }
+
+        function startEruption() {
+            mainContent.classList.add('hidden');
+            animationContainer.classList.remove('hidden');
+            initializeElements();
+            calculateLetterPositions();
+            createSmoke();
+
+            const volcanoRect = volcano.getBoundingClientRect();
+            const sceneRect = scene.getBoundingClientRect();
+            const startX = volcanoRect.left - sceneRect.left + (volcanoRect.width / 2);
+            const startY = volcanoRect.top - sceneRect.top + 20;
+
+            letterPositions.forEach((pos, index) => {
+                if (pos.char.trim() === '') return;
+
+                const letter = document.createElement('div');
+                letter.textContent = pos.char;
+                letter.className = 'letter';
+                scene.appendChild(letter);
+
+                letter.style.left = `${startX}px`;
+                letter.style.top = `${startY}px`;
+                letter.style.transform = `translate(-50%, -50%) scale(0)`;
+
+                setTimeout(() => {
+                    letter.style.opacity = '1';
+                    const randomXOffset = (Math.random() - 0.5) * 300;
+                    const randomYOffset = -Math.random() * 300 - 150;
+                    letter.style.transform = `translate(${randomXOffset}px, ${randomYOffset}px) rotate(${(Math.random() - 0.5) * 720}deg) scale(2.5)`;
+                }, index * 80);
+
+                setTimeout(() => {
+                    letter.style.color = '#ffeb3b';
+                    letter.style.textShadow = '0 0 5px #ff8c00, 0 0 10px #ff8c00, 0 0 15px #ff4500';
+                    letter.style.transform = `translate(0px, 0px) rotate(0deg) scale(1)`;
+                    letter.style.left = `${pos.x}px`;
+                    letter.style.top = `${pos.y}px`;
+                }, 1500 + index * 80);
+            });
+            
+            setTimeout(() => {
+                const resetButton = document.createElement('button');
+                resetButton.textContent = 'Nochmal!';
+                resetButton.className = 'start-button absolute bottom-2 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg z-20';
+                scene.appendChild(resetButton);
+                
+                resetButton.onclick = () => {
+                    if (smokeInterval) {
+                        clearInterval(smokeInterval);
+                        smokeInterval = null;
+                    }
+                    // KORREKTUR: Nur die dynamisch erstellten Elemente entfernen.
+                    document.querySelectorAll('.letter, .smoke-particle').forEach(el => el.remove());
+                    // Den "Nochmal!"-Button explizit entfernen.
+                    resetButton.remove();
+                    
+                    mainContent.classList.remove('hidden');
+                    animationContainer.classList.add('hidden');
+                };
+            }, 1500 + letterPositions.length * 80 + 1000);
+        }
+
+        startButton.addEventListener('click', startEruption);
+        
+        window.addEventListener('resize', () => {
+            if (!animationContainer.classList.contains('hidden')) {
+                calculateLetterPositions();
+            }
+        });
+        
+        calculateLetterPositions();
+    </script>
+</body>
+</html>
